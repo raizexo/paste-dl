@@ -36,19 +36,46 @@ npm run release # build AND publish to GitHub Releases
 > `TypeError: Cannot read properties of undefined (reading 'isPackaged')`, the environment variable
 > `ELECTRON_RUN_AS_NODE=1` is set in the shell. Clear it first: `$env:ELECTRON_RUN_AS_NODE=$null`.
 
+## GitHub operations — use the `gh` CLI
+
+Use `gh` for everything GitHub-side (releases, PRs, issues, API). Do **not** hand-roll REST calls
+with a manual token — `gh` is already authenticated.
+
+`gh` is installed but not on PATH, so define a shorthand first:
+
+```powershell
+$gh = "C:\Program Files\GitHub CLI\gh.exe"   # or add C:\Program Files\GitHub CLI to PATH
+```
+
+Common operations:
+
+```powershell
+& $gh release list
+& $gh release view v1.0.0
+& $gh release create v1.1.0 dist\PasteDL-Setup-1.1.0.exe dist\PasteDL-Setup-1.1.0.exe.blockmap dist\latest.yml --title "PasteDL 1.1.0" --notes "..." --target main
+& $gh pr create --base main --head feat/thing --title "..." --body "..."
+& $gh pr merge --merge --delete-branch
+& $gh issue list
+& $gh api repos/raizexo/paste-dl/releases    # arbitrary API calls, no token juggling
+```
+
+`gh` has no local version-control commands, so commits, branches, and pushes still use `git`.
+Everything else GitHub-side goes through `gh`.
+
 ## Git workflow — READ THIS FIRST
 
-**Never commit directly to `main`.** `main` is reserved for version upgrades and receives changes
-only by merging a working branch into it.
+**Never commit directly to `main`, and never merge or push to `main` directly.** `main` is reserved
+for version upgrades and changes reach it **only through a pull request**.
 
 Rules:
 
 1. Every change starts on a new branch.
-2. Work and commit on that branch.
+2. Work and commit on that branch, then push the branch.
 3. Bump the app version **on the branch**, but only if the change actually affects the shipped app.
    Docs-only, tooling-only, or CI-only changes do **not** need a version bump.
-4. Merge the branch into `main`.
-5. Publish a release from `main` after the merge.
+4. Open a **pull request** into `main` (`gh pr create`). Never merge locally.
+5. Merge the PR via `gh pr merge`. This is the only way changes land on `main`.
+6. Publish a release from `main` after the merge.
 
 ### Creating a branch
 
@@ -62,18 +89,21 @@ git checkout -b fix/short-description      # bug fix
 git checkout -b chore/short-description    # tooling, docs, config
 ```
 
-### Merging back into main
+### Merging back into main — via pull request only
 
-```bash
+```powershell
+$gh = "C:\Program Files\GitHub CLI\gh.exe"
+
 # on the branch, having committed your work
-git checkout main
-git pull origin main
-git merge --no-ff <branch-name>            # keep an explicit merge commit
-git push origin main
+git push -u origin <branch-name>
 
-git branch -d <branch-name>                # clean up locally
-git push origin --delete <branch-name>     # clean up remotely (if it was pushed)
+# open the PR, then merge it (gh deletes the branch too)
+& $gh pr create --base main --head <branch-name> --title "..." --body "..."
+& $gh pr merge --merge --delete-branch
 ```
+
+Do **not** `git merge` into `main` and do **not** `git push` to `main` directly. If a merge cannot be
+done through a PR, something is wrong with the process — fix that first.
 
 ## Versioning
 
@@ -93,12 +123,12 @@ npm version patch -m "chore: release v%s"
 # or: npm version minor -m "chore: release v%s"
 ```
 
-> A merge into `main` only "updates the version" if the merged branch carried a version bump.
+> A PR merged into `main` only "updates the version" if its branch carried a version bump.
 > If a branch needs no bump (docs/tooling), merge it as-is — `main` stays on the current version.
 
 ## Release process
 
-After `main` has the new version:
+After a PR with a version bump has been merged into `main`:
 
 ```bash
 git checkout main
@@ -106,17 +136,21 @@ git pull origin main
 npm run release
 ```
 
-`npm run release` runs `electron-builder --win nsis --publish always`, which:
+`npm run release` builds the installer locally and then publishes with the **`gh` CLI**:
 
-1. Builds `dist/PasteDL-Setup-<version>.exe`
-2. Creates a `v<version>` tag + GitHub Release
-3. Uploads `PasteDL-Setup-<version>.exe`, its `.blockmap`, and `latest.yml`
+1. `electron-builder --win nsis --publish never` builds `dist/PasteDL-Setup-<version>.exe`
+   (plus its `.blockmap` and `latest.yml`)
+2. `node scripts/release.js` runs
+   `gh release create v<version> <assets> --title "PasteDL <version>" --target main`
 
 Installed apps then auto-update: they read `latest.yml` from the newest release and download only
 the changed bytes via the `.blockmap`.
 
-Publish target is configured in `package.json` -> `build.publish` (`provider: github`,
-`owner: raizexo`, `repo: paste-dl`).
+Release assets must keep their exact names (`PasteDL-Setup-<version>.exe`, its `.blockmap`,
+`latest.yml`) — `latest.yml` references them by name.
+
+`build.publish` in `package.json` (`provider: github`, `owner: raizexo`, `repo: paste-dl`) is still
+required: it is what electron-builder bakes into the app as `app-update.yml`, which the updater reads.
 
 ## What has already been done to make the app work
 
@@ -139,6 +173,12 @@ Chronological list of the fixes/features that got the app to a working, shippabl
 5. **Added `.gitignore`** excluding `node_modules/`, `dist/`, `.userData/`, `bin/`, and agent tooling.
 6. **Added `README.md`** with install, dev, build, and release instructions.
 7. **Published `v1.0.0`** to GitHub Releases with the installer, blockmap, and `latest.yml`.
+8. **Moved the release step to the `gh` CLI.** `npm run release` now builds with
+   `--publish never` and then runs `node scripts/release.js`, which calls
+   `gh release create` (rather than electron-builder's own publisher, so no `GH_TOKEN` is needed —
+   the existing `gh` login is reused).
+9. **Adopted a pull-request-only workflow.** `main` only ever advances through a merged PR; see
+   *Git workflow* above.
 
 Verified after the fixes: packaged `dist/win-unpacked/resources/bin/yt-dlp.exe` reports
 `2026.08.19`, and a full audio download of a previously-failing video completes.

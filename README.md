@@ -62,17 +62,21 @@ Output lands in `dist/` (`PasteDL-Setup-<version>.exe`).
 
 ## Releasing an update
 
-1. Bump `version` in `package.json` (for example `1.0.0` -> `1.1.0`)
-2. Run:
+Contributions land on `main` through a pull request, never a direct push. To ship a new version:
+
+1. Work on a branch and bump `version` in `package.json` (for example `1.0.0` -> `1.1.0`)
+2. Open and merge a pull request into `main`
+3. From an up-to-date `main`, run:
 
 ```bash
 npm run release
 ```
 
-This builds the installer and publishes it to GitHub Releases. Installed copies then update
-themselves automatically: they read `latest.yml` from the newest release and download only the
-changed bytes via the `.blockmap` file. You will need GitHub credentials for the repo configured
-under `build.publish` in `package.json`.
+This builds the installer and publishes it to GitHub Releases using the [GitHub CLI](https://cli.github.com/) (`gh`),
+so no personal access token is needed — the existing `gh` login is reused.
+
+Installed copies then update themselves automatically: they read `latest.yml` from the newest
+release and download only the changed bytes via the `.blockmap` file.
 
 ## Tech
 

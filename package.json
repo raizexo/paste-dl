@@ -9,7 +9,7 @@
     "start": "electron .",
     "dist": "electron-builder --win nsis",
     "dist:portable": "electron-builder --win portable",
-    "release": "electron-builder --win nsis --publish always"
+    "release": "electron-builder --win nsis --publish never && node scripts/release.js"
   },
   "devDependencies": {
     "electron": "^31.7.7",
