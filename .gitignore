@@ -1,0 +1,23 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+build/*.blockmap
+
+# Dev-only user data (settings, cache)
+.userData/
+
+# Bundled binaries (yt-dlp.exe, ffmpeg.exe) - fetched locally, shipped inside the release installer
+bin/
+
+# Agent/editor tooling (not part of the app)
+.agents/
+.impeccable/
+skills-lock.json
+
+# Logs and OS junk
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db

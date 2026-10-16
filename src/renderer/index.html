@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; img-src 'self' data: https:; style-src 'self' 'unsafe-inline';" />
+  <link rel="stylesheet" href="style.css" />
+  <title>PasteDL</title>
+</head>
+<body>
+  <div id="titlebar" class="titlebar">
+    <div class="logo-group">
+      <img class="logo-img" src="pastedl.png" alt="PasteDL Logo" />
+      <h1>PasteDL</h1>
+    </div>
+    <div class="titlebar-actions">
+      <button id="settingsBtn" class="ghost icon-btn" title="Settings" aria-label="Settings">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        <span>Settings</span>
+      </button>
+      <div class="window-controls">
+        <button id="minBtn" class="win-btn" title="Minimize" aria-label="Minimize">
+          <svg width="10" height="10" viewBox="0 0 10 10"><path d="M1,5 L9,5" fill="none" stroke="currentColor" stroke-width="1"/></svg>
+        </button>
+        <button id="maxBtn" class="win-btn" title="Maximize" aria-label="Maximize">
+          <svg id="maxSvg" width="10" height="10" viewBox="0 0 10 10"><rect x="1.5" y="1.5" width="7" height="7" fill="none" stroke="currentColor" stroke-width="1"/></svg>
+        </button>
+        <button id="closeBtn" class="win-btn close" title="Close" aria-label="Close">
+          <svg width="10" height="10" viewBox="0 0 10 10"><path d="M1.5,1.5 L8.5,8.5 M8.5,1.5 L1.5,8.5" fill="none" stroke="currentColor" stroke-width="1"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <main>
+    <div id="updateBar" class="update-bar hidden">
+      <span id="updateText"></span>
+      <button id="updateAction" class="accent">Restart to update</button>
+    </div>
+
+    <div class="paste-row">
+      <input id="url" type="text" aria-label="Video URL to download" placeholder="Paste YouTube, Vimeo, SoundCloud..." autocomplete="off" spellcheck="false" />
+      <button id="parseBtn" class="primary">Look up</button>
+    </div>
+
+    <!-- Empty/Welcome State -->
+    <div id="emptyState" class="empty-state">
+      <div class="empty-icon">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      </div>
+      <h2>Download video & audio</h2>
+      <p>Paste a link from your browser to get started.</p>
+    </div>
+
+    <div id="loading" class="loading hidden">
+      <span class="spinner"></span>
+      <span>Reading link...</span>
+    </div>
+
+    <div id="meta" class="meta hidden">
+      <img id="thumb" alt="" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='90' viewBox='0 0 160 90'%3E%3Crect width='160' height='90' fill='%23e1e1e0'/%3E%3C/svg%3E" />
+      <div class="meta-text">
+        <div id="title" class="title"></div>
+        <div id="subtitle" class="subtitle"></div>
+      </div>
+    </div>
+
+    <div id="modes" class="modes hidden">
+      <button data-mode="video" data-res="1080" class="mode">1080p</button>
+      <button data-mode="video" data-res="720" class="mode">720p</button>
+      <button data-mode="video" data-res="480" class="mode">480p</button>
+      <button data-mode="video" data-res="360" class="mode">360p</button>
+      <button data-mode="audio" class="mode accent">Audio</button>
+    </div>
+
+    <div id="progress" class="progress hidden">
+      <div class="phase-row" aria-label="Download progress stages">
+        <span id="phaseDownload" class="phase active">Download</span>
+        <span id="phaseProcess" class="phase">Process</span>
+        <span id="phaseAudio" class="phase">Audio</span>
+      </div>
+      <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div id="barFill"></div></div>
+      <div id="status" class="status" role="status" aria-live="polite">Idle</div>
+      <button id="cancelBtn" class="danger">Cancel</button>
+    </div>
+
+    <div id="result" class="result hidden">
+      <div class="result-header">
+        <svg class="result-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 16 12 12 12 8"/></svg>
+        <span id="resultMessage"></span>
+      </div>
+      <div class="result-actions">
+        <button id="retryBtn" class="ghost">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+          <span>Try again</span>
+        </button>
+        <button id="openResultFolder" class="ghost">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+          <span>Open folder</span>
+        </button>
+        <button id="copyPathBtn" class="ghost">
+          <svg id="copyPathIcon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          <span id="copyPathText">Copy path</span>
+        </button>
+      </div>
+    </div>
+
+    <div id="settings" class="settings hidden">
+      <div class="settings-title">Download Settings</div>
+      <label>Download folder
+        <div class="folder-row">
+          <input id="destFolder" type="text" readonly />
+          <button id="browseBtn">Browse</button>
+        </div>
+      </label>
+      <button id="openFolderBtn" class="ghost">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+        <span>Open folder</span>
+      </button>
+      <label>YouTube cookies file (for age-restricted or private videos)
+        <div class="folder-row">
+          <input id="cookiesPath" type="text" readonly placeholder="No cookies file selected" />
+          <button id="cookiesBrowseBtn">Browse</button>
+          <button id="cookiesClearBtn" class="ghost">Clear</button>
+        </div>
+      </label>
+      <div class="settings-hint">Export cookies with a browser extension (e.g. “Get cookies.txt LOCALLY”) while signed in to YouTube, then select the .txt file here.</div>
+    </div>
+  </main>
+
+  <footer>
+    <span id="folderHint"></span>
+  </footer>
+
+  <script src="renderer.js"></script>
+</body>
+</html>
